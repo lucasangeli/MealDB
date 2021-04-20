@@ -1,24 +1,34 @@
 <template>
-  <div class="slds-m-around_medium">
-      <h1 class="slds-text-heading_small">Input Search Example</h1>
-      <p class="slds-text-body_regular">The following examples show various ways to create an input search component.</p>
-  </div>
-  <div onkeyup={handleKeyUp}>
-      <lightning-input
-          name="enter-search"
-          label="Search for a meal"
-          type="search"
-      ></lightning-input>
-  </div>
-  <p if:true={queryTerm}>
-      Searched for {queryTerm}!
-  </p>
-
   <div style="height: 300px;">
-      <lightning-datatable
-              key-field="id"
-              data={data}
-              columns={columns}>
-      </lightning-datatable>
+    <lightning-card  title="THE MEAL DB API" icon-name="custom:custom63">
+      <lightning-input type="search" onchange={handleSearch}>
+      </lightning-input>
+      <lightning-button label="Search meal" variant="brand" onclick={handleMealName}>
+      </lightning-button>
+
+          <lightning-datatable key-field="id" 
+                                data={mealNames} 
+                                columns={columns} 
+                                sorted-by={sortBy}
+                                sorted-direction={sortDirection}
+                                onsort={handleSort}
+                                hide-checkbox-column="true"
+                                default-sort-direction={defaultSortDirection}>
+          </lightning-datatable>
+
+          <template if:true={mealSearched}> 
+            <lightning-datatable key-field="Id"
+                                 data={mealSearched}
+                                 columns={columns}
+            ></lightning-datatable>
+          </template>
+
+          <template if:false={mealSpinner} class="slds-spinner_inline spinner-padding">
+            <lightning-spinner variant="brand"
+                               alternative-text="Loading"
+                               size="large">
+            </lightning-spinner>
+          </template>
+    </lightning-card>
   </div>   
 </template>
