@@ -1,36 +1,74 @@
-import { track, wire, LightningElement } from 'lwc';
-import getMeals from '@salesforce/apex/MealDB.getMeals';
+import { api, track, wire, LightningElement } from 'lwc';
+import getMealData from '@salesforce/apex/MealsRetriever.getMealData';
 
-const columns = [
-    { label: 'Name', fieldName: 'Name', sortable: true },
-    { label: 'Category', fieldName: 'Category__c', type: 'text', sortable: true },
-    { label: 'Region', fieldName: 'Area__c', type: 'text' },
-    { label: 'Instructions', fieldName: 'Instructions__c', type: 'text' },
+const columns =[
+    {label: 'Meal ID', fieldName: 'idMeal', editable: false, sortable: true, hideDefaultActions: true},
+    {label: 'Meal', fieldName: 'strMeal', editable: false, sortable: true, hideDefaultActions: true},
+    {label: 'Category', fieldName: 'strCategory', editable: false, sortable: true, hideDefaultActions: true},
+    {label: 'Meal Origin', fieldName: 'strArea', editable: false, sortable: true, hideDefaultActions: true},
+    {label: 'How to prepare', fieldName: 'strInstructions', editable: false, sortable: true},
 ];
 
-export default class DataTableComponent extends LightningElement {
-    @track data = [];
+export default class DataTableWithSortingInLWC extends LightningElement {
+    
     @track columns = columns;
-    queryTerm;
+    @track sortBy;
+    @track sortDirection;
+    @track mealNames;
+    @track mealSpinner = false;
+    @track searchKey;
+    @track mealSearched;
 
-    @wire(getMeals, {})
-    ApexResponse({ error, data }) {
-        if (data) {
-            this.data = data;
-        } else if (error) {
-            //test
+    @wire(getMealData)
+        mealDataResult(result){
+            const {data, error} = result;
+            if(data){
+                this.mealNames = data;
+                this.mealSpinner = true;
+                this.error = undefined;
+            } else if(error){
+                this.mealNames = undefined;
+                this.error = error;
+            }
         }
+    
+    handleSearch(event){
+        this.mealSearched = event.target.value;
+        console.log('User typed:', this.mealSearched);
     }
 
-    handleKeyUp(evt){
-        const isEnterKey = evt.keyCode === 13;
-        if(isEnterKey){
-            this.queryTerm = evt.target.value;
-        }
+    handleMealName(){
+        getMealData(
+            {searchKey: '$mealSearched'}
+        )
+        .then(result =>{
+            this.mealSearched = result;
+            this.error = undefined;
+        })
+        .catch(error =>{
+            this.mealSearched = undefined;
+            this.error = error;
+        })
+        
     }
 
-    searchMeal(event){
-        const mealId = event.detail;
-        this.template.querySelector("div").searchBoats(boatTypeId);
+    handleSort(event){
+        this.sortBy = event.detail.fieldName;
+        this.sortDirection = event.detail.sortDirection;
+        this.sortData(this.sortBy, this.sortDirection);
     }
+
+    sortData(fieldname, direction) {
+        let parseData = JSON.parse(JSON.stringify(this.mealNames));
+        let keyValue = (a) => {
+            return a[fieldname];
+        };
+        let isReverse = direction === 'asc' ? 1: -1;
+        parseData.sort((x, y) => {
+            x = keyValue(x) ? keyValue(x) : ''; 
+            y = keyValue(y) ? keyValue(y) : '';
+            return isReverse * ((x > y) - (y > x));
+        });
+        this.mealNames = parseData;
+    }  
 }
